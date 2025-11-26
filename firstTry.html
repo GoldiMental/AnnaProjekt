@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rechnungsprogramm • Termine • Artikel</title>
+  <style>
+    :root{
+      --bg:#0f172a;/* slate-900 */
+      --panel:#111827;/* gray-900 */
+      --muted:#1f2937;/* gray-800 */
+      --text:#e5e7eb;/* gray-200 */
+      --soft:#9ca3af;/* gray-400 */
+      --brand:#6366f1;/* indigo-500 */
+      --accent:#22c55e;/* green-500 */
+      --danger:#ef4444;/* red-500 */
+      --warn:#f59e0b;/* amber-500 */
+      --card:#0b1024;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1024, #0f172a 30%, #0b1024);color:var(--text)}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #1f2937;background:rgba(17,24,39,.6);backdrop-filter: blur(6px);position:sticky;top:0;z-index:5}
+    .app-title{display:flex;gap:12px;align-items:center}
+    .logo{width:36px;height:36px;border-radius:10px;background: radial-gradient(120% 120% at 0% 0%, #22c55e, #6366f1 60%, #111827 100%);box-shadow:0 6px 24px rgba(99,102,241,.35)}
+    nav{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{border:1px solid #1f2937;background:linear-gradient(180deg,#0f172a,#0b1024);padding:10px 14px;border-radius:12px;color:var(--text);cursor:pointer;font-weight:600}
+    .tab.active{border-color:var(--brand);box-shadow:0 0 0 2px rgba(99,102,241,.25) inset}
+
+    main{max-width:1200px;margin:24px auto;padding:0 16px}
+    .grid{display:grid;gap:16px}
+    .two{grid-template-columns:1fr 1fr}
+    .three{grid-template-columns:1fr 1fr 1fr}
+    @media(max-width:980px){.two,.three{grid-template-columns:1fr}}
+
+    .card{background:linear-gradient(180deg,#0f172a,#0b1024);border:1px solid #1f2937;border-radius:16px;box-shadow:0 16px 40px rgba(2,6,23,.35)}
+    .card h2{margin:0 0 8px 0;font-size:18px}
+    .card .head{padding:16px;border-bottom:1px solid #1f2937;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .card .body{padding:16px}
+
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    label{font-size:12px;color:var(--soft)}
+    input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263248;background:#0b1024;color:var(--text)}
+    input[type="number"]{appearance:textfield}
+    button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn{background:var(--brand);color:#fff}
+    .btn.secondary{background:#334155}
+    .btn.ghost{background:transparent;border:1px solid #334155}
+    .btn.success{background:var(--accent)}
+    .btn.danger{background:var(--danger)}
+    .btn.warn{background:var(--warn)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid #1f2937;padding:10px;text-align:left}
+    th{color:#cbd5e1;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+    tr:hover td{background:#0f172a}
+
+    .right{text-align:right}
+    .muted{color:var(--soft)}
+    .pill{font-size:12px;background:#0b132a;border:1px solid #253055;color:#c7d2fe;padding:6px 10px;border-radius:999px}
+
+    /* Kalender */
+    .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+    .cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
+    .day-name{font-size:12px;color:#a1a1aa;text-align:center}
+    .cal-cell{min-height:90px;border:1px dashed #334155;border-radius:12px;padding:8px;background:#0b1024;position:relative}
+    .cal-cell .date{position:absolute;top:6px;right:8px;font-size:11px;color:#94a3b8}
+    .event{margin-top:18px;padding:6px 8px;border-radius:8px;background:#141a33;border:1px solid #2b3566}
+
+    /* Drucklayout für Rechnung */
+    @media print{
+      body{background:#fff;color:#000}
+      header, #bereich-artikel, #bereich-kalender, .toolbar, .app-title{display:none !important}
+      .card{border:0;box-shadow:none}
+      #druck-rechnung{display:block}
+    }
+    #druck-rechnung{display:none}
+    .hint{font-size:12px;color:#93c5fd}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="app-title">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <div style="font-weight:800;font-size:18px">Rechnungen • Termine • Artikel</div>
+        <div class="muted" style="font-size:12px">Single-File App (lokale Speicherung)</div>
+      </div>
+    </div>
+    <nav>
+      <button class="tab active" data-tab="rechnungen">Rechnungen</button>
+      <button class="tab" data-tab="kalender">Terminkalender</button>
+      <button class="tab" data-tab="artikel">Artikel</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Rechnungen -->
+    <section id="bereich-rechnungen" class="grid two">
+      <div class="card">
+        <div class="head"><h2>Neue Rechnung</h2>
+          <div class="toolbar">
+            <button class="btn ghost" id="btn-neue-rechnung">Zurücksetzen</button>
+            <button class="btn success" id="btn-speichern-rechnung">Speichern</button>
+            <button class="btn" id="btn-drucken">Drucken</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="grid two">
+            <div>
+              <label>Rechnungsnummer</label>
+              <input id="r-nr" placeholder="z. B. 2025-001" />
+            </div>
+            <div>
+              <label>Datum</label>
+              <input id="r-datum" type="date" />
+            </div>
+            <div>
+              <label>Fällig am</label>
+              <input id="r-faellig" type="date" />
+            </div>
+            <div>
+              <label>Notizen (intern)</label>
+              <input id="r-notiz" placeholder="optional" />
+            </div>
+          </div>
+
+          <div class="grid two" style="margin-top:12px">
+            <div>
+              <h3>Kunde</h3>
+              <div class="row">
+                <div style="flex:1 1 100%">
+                  <label>Name / Firma</label>
+                  <input id="k-name" />
+                </div>
+                <div style="flex:1 1 100%">
+                  <label>Email</label>
+                  <input id="k-email" type="email" />
+                </div>
+                <div style="flex:1 1 100%">
+                  <label>Adresse</label>
+                  <textarea id="k-adresse" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3>Unternehmen</h3>
+              <div class="row">
+                <div style="flex:1 1 100%"><label>Firmenname</label><input id="u-name" placeholder="Mein Unternehmen"/></div>
+                <div style="flex:1 1 100%"><label>USt.-ID / Steuernummer</label><input id="u-steuer"/></div>
+                <div style="flex:1 1 100%"><label>Adresse</label><textarea id="u-adresse" rows="3" placeholder="Straße 1\n12345 Ort"></textarea></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px">
+            <div class="row" style="align-items:end">
+              <div style="flex:2">
+                <label>Artikel</label>
+                <select id="pos-artikel"></select>
+              </div>
+              <div style="flex:1">
+                <label>Einzelpreis (€)</label>
+                <input id="pos-preis" type="number" step="0.01" />
+              </div>
+              <div style="flex:1">
+                <label>Menge</label>
+                <input id="pos-menge" type="number" step="1" value="1" />
+              </div>
+              <div style="flex:1">
+                <label>Rabatt (%)</label>
+                <input id="pos-rabatt" type="number" step="1" value="0" />
+              </div>
+              <div>
+                <button class="btn" id="btn-pos-hinzufuegen">Position hinzufügen</button>
+              </div>
+            </div>
+
+            <div style="overflow:auto;margin-top:12px">
+              <table id="pos-tabelle">
+                <thead>
+                  <tr>
+                    <th>Artikel</th>
+                    <th class="right">Preis</th>
+                    <th class="right">Menge</th>
+                    <th class="right">Rabatt</th>
+                    <th class="right">Zwischensumme</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="grid two" style="margin-top:16px;align-items:flex-start">
+              <div>
+                <label>Fußtext auf Rechnung</label>
+                <textarea id="r-fusstext" rows="3" placeholder="Zahlbar innerhalb von 14 Tagen ohne Abzug."></textarea>
+                <div class="hint">Hinweis: Über <span class="pill">Drucken</span> erhältst du eine saubere Druckansicht als PDF (Browser → „Als PDF speichern“).</div>
+              </div>
+              <div>
+                <div class="row">
+                  <div style="flex:1">
+                    <label>USt. (%)</label>
+                    <input id="r-ust" type="number" step="0.1" value="19" />
+                  </div>
+                  <div style="flex:1">
+                    <label>Versand / Sonstiges (€)</label>
+                    <input id="r-versand" type="number" step="0.01" value="0" />
+                  </div>
+                </div>
+                <div style="margin-top:8px;border:1px solid #243047;border-radius:12px;padding:12px;background:#0b1024">
+                  <div class="row"><div>Zwischensumme</div><div class="right" style="flex:1" id="summe-netto">0,00 €</div></div>
+                  <div class="row"><div>USt.</div><div class="right" style="flex:1" id="summe-ust">0,00 €</div></div>
+                  <div class="row"><div>Versand</div><div class="right" style="flex:1" id="summe-versand">0,00 €</div></div>
+                  <div class="row" style="font-weight:800;font-size:18px"><div>Gesamt</div><div class="right" style="flex:1" id="summe-gesamt">0,00 €</div></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <h2>Gespeicherte Rechnungen</h2>
+          <div class="toolbar">
+            <button class="btn ghost" id="btn-export">Export (JSON)</button>
+            <label class="btn secondary" for="importFile" style="cursor:pointer">Import</label>
+            <input type="file" id="importFile" accept="application/json" style="display:none" />
+          </div>
+        </div>
+        <div class="body">
+          <div style="margin-bottom:8px" class="row">
+            <input id="suche-rechnung" placeholder="Suchen nach Nr., Kunde, Datum…"/>
+          </div>
+          <div style="overflow:auto;max-height:540px">
+            <table id="tabelle-rechnungen">
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Datum</th>
+                  <th>Kunde</th>
+                  <th class="right">Summe</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Kalender -->
+    <section id="bereich-kalender" style="display:none" class="grid two">
+      <div class="card">
+        <div class="head"><h2>Terminkalender</h2>
+          <div class="toolbar">
+            <button class="btn ghost" id="kal-prev">◀</button>
+            <div class="pill" id="kal-title"></div>
+            <button class="btn ghost" id="kal-next">▶</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="cal-head">
+            <div class="day-name">Mo</div>
+            <div class="day-name">Di</div>
+            <div class="day-name">Mi</div>
+            <div class="day-name">Do</div>
+            <div class="day-name">Fr</div>
+            <div class="day-name">Sa</div>
+            <div class="day-name">So</div>
+          </div>
+          <div class="calendar" id="calendar"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="head"><h2>Termin hinzufügen</h2></div>
+        <div class="body">
+          <div class="grid two">
+            <div>
+              <label>Datum</label>
+              <input id="ev-datum" type="date" />
+            </div>
+            <div>
+              <label>Zeit</label>
+              <input id="ev-zeit" type="time" />
+            </div>
+            <div style="grid-column:1/-1">
+              <label>Titel</label>
+              <input id="ev-titel" />
+            </div>
+            <div style="grid-column:1/-1">
+              <label>Beschreibung</label>
+              <textarea id="ev-desc" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="toolbar" style="margin-top:12px">
+            <button class="btn success" id="btn-ev-speichern">Speichern</button>
+            <button class="btn ghost" id="btn-ev-reset">Zurücksetzen</button>
+          </div>
+          <div style="margin-top:16px">
+            <h3>Kommende Termine</h3>
+            <div id="ev-liste"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Artikel -->
+    <section id="bereich-artikel" style="display:none" class="grid two">
+      <div class="card">
+        <div class="head"><h2>Artikelstamm</h2></div>
+        <div class="body">
+          <div class="grid two">
+            <div>
+              <label>Artikelnummer</label>
+              <input id="a-nr" placeholder="SKU-001" />
+            </div>
+            <div>
+              <label>Bezeichnung</label>
+              <input id="a-name" />
+            </div>
+            <div>
+              <label>Einheitspreis (€)</label>
+              <input id="a-preis" type="number" step="0.01" />
+            </div>
+            <div>
+              <label>USt.-Satz (%)</label>
+              <input id="a-ust" type="number" step="0.1" value="19" />
+            </div>
+            <div style="grid-column:1/-1">
+              <label>Beschreibung</label>
+              <textarea id="a-desc" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="toolbar" style="margin-top:12px">
+            <button class="btn success" id="btn-artikel-speichern">Artikel speichern</button>
+            <button class="btn ghost" id="btn-artikel-reset">Felder leeren</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="head"><h2>Gespeicherte Artikel</h2></div>
+        <div class="body">
+          <div class="row" style="margin-bottom:8px">
+            <input id="suche-artikel" placeholder="Suchen nach Nr. oder Bezeichnung…" />
+          </div>
+          <div style="overflow:auto;max-height:560px">
+            <table id="tabelle-artikel">
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Name</th>
+                  <th class="right">Preis</th>
+                  <th class="right">USt.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Druckbare Rechnung -->
+    <section id="druck-rechnung">
+      <div>
+        <h1 style="margin:0">Rechnung <span id="p-nr"></span></h1>
+        <div class="muted" id="p-datum"></div>
+        <hr/>
+        <div class="grid two">
+          <div>
+            <h3>Rechnung an</h3>
+            <div id="p-kunde"></div>
+          </div>
+          <div>
+            <h3>Unternehmen</h3>
+            <div id="p-unternehmen"></div>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr>
+                <th style="text-align:left;border-bottom:1px solid #ccc;padding:8px">Artikel</th>
+                <th style="text-align:right;border-bottom:1px solid #ccc;padding:8px">Preis</th>
+                <th style="text-align:right;border-bottom:1px solid #ccc;padding:8px">Menge</th>
+                <th style="text-align:right;border-bottom:1px solid #ccc;padding:8px">Rabatt</th>
+                <th style="text-align:right;border-bottom:1px solid #ccc;padding:8px">Zwischensumme</th>
+              </tr>
+            </thead>
+            <tbody id="p-pos"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:24px;justify-content:flex-end">
+          <table>
+            <tr><td>Zwischensumme</td><td style="text-align:right;padding-left:16px" id="p-netto">0,00 €</td></tr>
+            <tr><td>USt.</td><td style="text-align:right;padding-left:16px" id="p-ust">0,00 €</td></tr>
+            <tr><td>Versand</td><td style="text-align:right;padding-left:16px" id="p-versand">0,00 €</td></tr>
+            <tr style="font-weight:bold"><td>Gesamt</td><td style="text-align:right;padding-left:16px" id="p-gesamt">0,00 €</td></tr>
+          </table>
+        </div>
+        <div style="margin-top:16px" id="p-fusstext"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---------- Hilfsfunktionen ----------
+    const $$ = (sel,root=document)=>Array.from(root.querySelectorAll(sel));
+    const $ = (sel,root=document)=>root.querySelector(sel);
+    const fmt = n => (Number(n)||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+    const todayStr = ()=> new Date().toISOString().slice(0,10);
+
+    const store = {
+      get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
+      set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+    };
+
+    // ---------- Tabs ----------
+    $$('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+      $$('.tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const t = btn.dataset.tab;
+      $('#bereich-rechnungen').style.display = (t==='rechnungen')?'grid':'none';
+      $('#bereich-kalender').style.display   = (t==='kalender')?'grid':'none';
+      $('#bereich-artikel').style.display    = (t==='artikel')?'grid':'none';
+    }));
+
+    // ---------- Artikel ----------
+    function ladeArtikelListe(){
+      const arr = store.get('artikel', []);
+      const q = ($('#suche-artikel')?.value||'').toLowerCase();
+      const tbody = $('#tabelle-artikel tbody');
+      tbody.innerHTML = '';
+      arr.filter(a=> (a.nr+a.name).toLowerCase().includes(q)).forEach((a,i)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.nr}</td>
+          <td>${a.name}</td>
+          <td class="right">${fmt(a.preis)}</td>
+          <td class="right">${Number(a.ust||0)}%</td>
+          <td class="right">
+            <button class="btn ghost" data-edit="${i}">Bearbeiten</button>
+            <button class="btn danger" data-del="${i}">Löschen</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+      // Optionen für Rechnung
+      const sel = $('#pos-artikel');
+      sel.innerHTML = '<option value="">– Artikel wählen –</option>' + arr.map((a,idx)=>`<option value="${idx}">${a.nr} • ${a.name}</option>`).join('');
+    }
+
+    function artikelSpeichern(){
+      const nr = $('#a-nr').value.trim();
+      const name = $('#a-name').value.trim();
+      const preis = parseFloat($('#a-preis').value||0);
+      const ust = parseFloat($('#a-ust').value||19);
+      const desc = $('#a-desc').value.trim();
+      if(!nr||!name){alert('Bitte Artikelnummer und Bezeichnung angeben.');return}
+      const arr = store.get('artikel', []);
+      const idx = arr.findIndex(x=>x.nr===nr);
+      const obj = {nr,name,preis,ust,desc};
+      if(idx>-1) arr[idx]=obj; else arr.push(obj);
+      store.set('artikel', arr);
+      ladeArtikelListe();
+      artikelReset();
+    }
+    function artikelReset(){ ['a-nr','a-name','a-preis','a-ust','a-desc'].forEach(id=>$('#'+id).value=''); $('#a-ust').value=19; }
+
+    $('#btn-artikel-speichern').addEventListener('click', artikelSpeichern);
+    $('#btn-artikel-reset').addEventListener('click', artikelReset);
+    $('#suche-artikel').addEventListener('input', ladeArtikelListe);
+    $('#tabelle-artikel').addEventListener('click', e=>{
+      const i = e.target.dataset.edit ?? e.target.dataset.del;
+      if(i==null) return;
+      const arr = store.get('artikel', []);
+      if(e.target.dataset.edit!=null){
+        const a = arr[i];
+        $('#a-nr').value=a.nr; $('#a-name').value=a.name; $('#a-preis').value=a.preis; $('#a-ust').value=a.ust; $('#a-desc').value=a.desc;
+      } else if(confirm('Artikel wirklich löschen?')){
+        arr.splice(i,1); store.set('artikel', arr); ladeArtikelListe();
+      }
+    });
+
+    // ---------- Rechnung ----------
+    let positionen = [];
+
+    function posRender(){
+      const tbody = $('#pos-tabelle tbody');
+      tbody.innerHTML='';
+      let netto = 0;
+      positionen.forEach((p,idx)=>{
+        const zw = (p.preis*p.menge) * (1 - (p.rabatt||0)/100);
+        netto += zw;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.name}</td>
+          <td class="right">${fmt(p.preis)}</td>
+          <td class="right">${p.menge}</td>
+          <td class="right">${p.rabatt||0}%</td>
+          <td class="right">${fmt(zw)}</td>
+          <td class="right"><button class="btn danger" data-remove="${idx}">Entfernen</button></td>`;
+        tbody.appendChild(tr);
+      });
+      const ustSatz = parseFloat($('#r-ust').value||0)/100;
+      const versand = parseFloat($('#r-versand').value||0);
+      const ust = netto*ustSatz;
+      const gesamt = netto+ust+versand;
+      $('#summe-netto').textContent = fmt(netto);
+      $('#summe-ust').textContent = fmt(ust);
+      $('#summe-versand').textContent = fmt(versand);
+      $('#summe-gesamt').textContent = fmt(gesamt);
+    }
+
+    function rechnungReset(){
+      positionen = [];
+      ['r-nr','r-notiz','k-name','k-email','k-adresse','u-name','u-steuer','u-adresse','r-fusstext','pos-preis','pos-menge','pos-rabatt'].forEach(id=>$('#'+id).value='');
+      $('#r-datum').value = todayStr();
+      $('#r-faellig').value = todayStr();
+      $('#r-ust').value = 19; $('#r-versand').value = 0; $('#pos-menge').value=1; $('#pos-rabatt').value=0;
+      $('#pos-artikel').selectedIndex=0;
+      posRender();
+    }
+
+    function posAusArtikel(){
+      const idx = $('#pos-artikel').value;
+      if(idx==='') return; 
+      const a = store.get('artikel', [])[Number(idx)];
+      if(!a) return;
+      $('#pos-preis').value = a.preis;
+    }
+
+    function posHinzufuegen(){
+      const idx = $('#pos-artikel').value;
+      let name = '';
+      let preis = parseFloat($('#pos-preis').value||0);
+      const menge = parseFloat($('#pos-menge').value||1);
+      const rabatt = parseFloat($('#pos-rabatt').value||0);
+      if(idx!==''){
+        const a = store.get('artikel', [])[Number(idx)];
+        if(a){ name = `${a.nr} • ${a.name}`; if(!$('#pos-preis').value) preis = a.preis; }
+      } else {
+        name = prompt('Freitext-Position: Bitte Bezeichnung eingeben:','Neue Position')||'';
+      }
+      if(!name){ alert('Keine Position angegeben.'); return; }
+      positionen.push({name, preis: preis||0, menge: menge||1, rabatt: rabatt||0});
+      posRender();
+      ['pos-preis','pos-menge','pos-rabatt'].forEach(id=>$('#'+id).value=''); $('#pos-menge').value=1; $('#pos-rabatt').value=0; $('#pos-artikel').selectedIndex=0;
+    }
+
+    $('#pos-artikel').addEventListener('change', posAusArtikel);
+    $('#btn-pos-hinzufuegen').addEventListener('click', posHinzufuegen);
+    $('#pos-tabelle').addEventListener('click', e=>{
+      if(e.target.dataset.remove!=null){ positionen.splice(Number(e.target.dataset.remove),1); posRender(); }
+    });
+    $('#r-ust').addEventListener('input', posRender);
+    $('#r-versand').addEventListener('input', posRender);
+
+    function rechnungSpeichern(){
+      const data = {
+        nr: $('#r-nr').value.trim() || `R-${Date.now()}`,
+        datum: $('#r-datum').value || todayStr(),
+        faellig: $('#r-faellig').value || $('#r-datum').value || todayStr(),
+        notiz: $('#r-notiz').value.trim(),
+        kunde: { name: $('#k-name').value.trim(), email: $('#k-email').value.trim(), adresse: $('#k-adresse').value.trim() },
+        firma: { name: $('#u-name').value.trim(), steuer: $('#u-steuer').value.trim(), adresse: $('#u-adresse').value.trim() },
+        pos: positionen,
+        ust: parseFloat($('#r-ust').value||0),
+        versand: parseFloat($('#r-versand').value||0),
+        fuss: $('#r-fusstext').value.trim(),
+      };
+      const arr = store.get('rechnungen', []);
+      const idx = arr.findIndex(r=>r.nr===data.nr);
+      if(idx>-1) arr[idx]=data; else arr.unshift(data);
+      store.set('rechnungen', arr);
+      rechnungenRender();
+      alert('Rechnung gespeichert.');
+    }
+
+    function rechnungenRender(){
+      const arr = store.get('rechnungen', []);
+      const q = ($('#suche-rechnung')?.value||'').toLowerCase();
+      const tbody = $('#tabelle-rechnungen tbody');
+      tbody.innerHTML='';
+      arr.filter(r=> (r.nr + ' ' + (r.kunde?.name||'') + ' ' + r.datum).toLowerCase().includes(q)).forEach((r,i)=>{
+        const netto = r.pos.reduce((s,p)=> s + (p.preis*p.menge)*(1-(p.rabatt||0)/100), 0);
+        const ust = netto * (r.ust/100);
+        const summe = netto + ust + (r.versand||0);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.nr}</td>
+          <td>${r.datum}</td>
+          <td>${r.kunde?.name||''}</td>
+          <td class="right">${fmt(summe)}</td>
+          <td><span class="pill">offen</span></td>
+          <td class="right">
+            <button class="btn ghost" data-open="${i}">Öffnen</button>
+            <button class="btn warn" data-print="${i}">Drucken</button>
+            <button class="btn danger" data-del="${i}">Löschen</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function rechnungOeffnen(r){
+      $('#r-nr').value=r.nr; $('#r-datum').value=r.datum; $('#r-faellig').value=r.faellig; $('#r-notiz').value=r.notiz||'';
+      $('#k-name').value=r.kunde?.name||''; $('#k-email').value=r.kunde?.email||''; $('#k-adresse').value=r.kunde?.adresse||'';
+      $('#u-name').value=r.firma?.name||''; $('#u-steuer').value=r.firma?.steuer||''; $('#u-adresse').value=r.firma?.adresse||'';
+      $('#r-ust').value=r.ust||19; $('#r-versand').value=r.versand||0; $('#r-fusstext').value=r.fuss||'';
+      positionen = r.pos||[]; posRender();
+    }
+
+    function rechnungDruckAnsicht(r){
+      $('#p-nr').textContent = r.nr;
+      $('#p-datum').textContent = `Datum: ${r.datum} • Fällig: ${r.faellig}`;
+      $('#p-kunde').innerHTML = `<strong>${r.kunde?.name||''}</strong><br>${(r.kunde?.adresse||'').replaceAll('\n','<br>')}<br>${r.kunde?.email||''}`;
+      $('#p-unternehmen').innerHTML = `<strong>${r.firma?.name||''}</strong><br>${(r.firma?.adresse||'').replaceAll('\n','<br>')}<br>${r.firma?.steuer||''}`;
+      const tbody = $('#p-pos'); tbody.innerHTML='';
+      let netto=0; (r.pos||[]).forEach(p=>{
+        const zw=(p.preis*p.menge)*(1-(p.rabatt||0)/100); netto+=zw;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td style="padding:8px;border-bottom:1px solid #eee">${p.name}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${fmt(p.preis)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${p.menge}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${p.rabatt||0}%</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${fmt(zw)}</td>`;
+        tbody.appendChild(tr);
+      });
+      const ust = netto*(r.ust/100); const ges = netto+ust+(r.versand||0);
+      $('#p-netto').textContent = fmt(netto);
+      $('#p-ust').textContent = fmt(ust);
+      $('#p-versand').textContent = fmt(r.versand||0);
+      $('#p-gesamt').textContent = fmt(ges);
+      $('#p-fusstext').textContent = r.fuss||'';
+      window.print();
+    }
+
+    $('#btn-speichern-rechnung').addEventListener('click', rechnungSpeichern);
+    $('#btn-neue-rechnung').addEventListener('click', rechnungReset);
+    $('#btn-drucken').addEventListener('click', ()=>{
+      const arr = store.get('rechnungen', []);
+      const idx = arr.findIndex(x=>x.nr===$('#r-nr').value.trim());
+      const r = idx>-1 ? arr[idx] : {
+        nr: $('#r-nr').value.trim()||'Unbenannt', datum: $('#r-datum').value||todayStr(), faellig: $('#r-faellig').value||todayStr(),
+        kunde:{name:$('#k-name').value,email:$('#k-email').value,adresse:$('#k-adresse').value},
+        firma:{name:$('#u-name').value,steuer:$('#u-steuer').value,adresse:$('#u-adresse').value},
+        pos: positionen, ust: parseFloat($('#r-ust').value||0), versand: parseFloat($('#r-versand').value||0), fuss: $('#r-fusstext').value||''
+      };
+      rechnungDruckAnsicht(r);
+    });
+
+    $('#tabelle-rechnungen').addEventListener('click', e=>{
+      const arr = store.get('rechnungen', []);
+      const i = e.target.dataset.open ?? e.target.dataset.print ?? e.target.dataset.del;
+      if(i==null) return;
+      const r = arr[Number(i)];
+      if(e.target.dataset.open!=null){ rechnungOeffnen(r); }
+      else if(e.target.dataset.print!=null){ rechnungDruckAnsicht(r); }
+      else if(confirm('Rechnung wirklich löschen?')){ arr.splice(Number(i),1); store.set('rechnungen',arr); rechnungenRender(); }
+    });
+
+    $('#suche-rechnung').addEventListener('input', rechnungenRender);
+
+    // Export / Import
+    $('#btn-export').addEventListener('click', ()=>{
+      const data = {
+        artikel: store.get('artikel', []),
+        rechnungen: store.get('rechnungen', []),
+        events: store.get('events', [])
+      };
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    });
+    $('#importFile').addEventListener('change', (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      const rd = new FileReader();
+      rd.onload = ()=>{
+        try{
+          const data = JSON.parse(rd.result);
+          if(data.artikel) store.set('artikel', data.artikel);
+          if(data.rechnungen) store.set('rechnungen', data.rechnungen);
+          if(data.events) store.set('events', data.events);
+          ladeArtikelListe(); rechnungenRender(); renderCalendar(); renderEventList();
+          alert('Import erfolgreich.');
+        }catch(err){ alert('Import fehlgeschlagen: '+err.message); }
+      };
+      rd.readAsText(file);
+    });
+
+    // ---------- Kalender ----------
+    let calRef = new Date();
+
+    function eventsGet(){ return store.get('events', []).sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time)); }
+    function eventsSet(arr){ store.set('events', arr); }
+
+    function renderCalendar(){
+      const container = $('#calendar');
+      container.innerHTML='';
+      const y = calRef.getFullYear();
+      const m = calRef.getMonth();
+      $('#kal-title').textContent = calRef.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+
+      const first = new Date(y,m,1);
+      const startIdx = (first.getDay()+6)%7; // Mo=0
+      const daysInMonth = new Date(y,m+1,0).getDate();
+      // Leere Felder vor dem 1.
+      for(let i=0;i<startIdx;i++) container.appendChild(document.createElement('div'));
+      // Tage
+      const evs = eventsGet();
+      for(let d=1; d<=daysInMonth; d++){
+        const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const cell = document.createElement('div');
+        cell.className='cal-cell';
+        const date = document.createElement('div'); date.className='date'; date.textContent=d; cell.appendChild(date);
+        evs.filter(e=>e.date===dateStr).slice(0,3).forEach(e=>{
+          const el = document.createElement('div'); el.className='event'; el.textContent = `${e.time||''} ${e.title}`; cell.appendChild(el);
+        });
+        cell.addEventListener('click',()=>{ $('#ev-datum').value = dateStr; $('#ev-titel').focus(); });
+        container.appendChild(cell);
+      }
+    }
+
+    function saveEvent(){
+      const date = $('#ev-datum').value; const time = $('#ev-zeit').value; const title = $('#ev-titel').value.trim(); const desc = $('#ev-desc').value.trim();
+      if(!date||!title){ alert('Bitte Datum und Titel eingeben.'); return }
+      const arr = eventsGet(); arr.push({date,time,title,desc}); eventsSet(arr);
+      renderCalendar(); renderEventList();
+      ['ev-datum','ev-zeit','ev-titel','ev-desc'].forEach(id=>$('#'+id).value='');
+    }
+
+    function renderEventList(){
+      const wrap = $('#ev-liste'); wrap.innerHTML='';
+      eventsGet().forEach((e,i)=>{
+        const div = document.createElement('div');
+        div.className='event';
+        div.innerHTML = `<strong>${e.date} ${e.time||''}</strong> – ${e.title}<br><span class="muted">${e.desc||''}</span>
+          <div style="margin-top:6px;text-align:right"><button class="btn danger" data-del="${i}">Löschen</button></div>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    $('#kal-prev').addEventListener('click', ()=>{ calRef.setMonth(calRef.getMonth()-1); renderCalendar(); });
+    $('#kal-next').addEventListener('click', ()=>{ calRef.setMonth(calRef.getMonth()+1); renderCalendar(); });
+    $('#btn-ev-speichern').addEventListener('click', saveEvent);
+    $('#btn-ev-reset').addEventListener('click', ()=>{ ['ev-datum','ev-zeit','ev-titel','ev-desc'].forEach(id=>$('#'+id).value=''); });
+    $('#ev-liste').addEventListener('click', e=>{
+      if(e.target.dataset.del!=null){ const arr=eventsGet(); arr.splice(Number(e.target.dataset.del),1); eventsSet(arr); renderCalendar(); renderEventList(); }
+    });
+
+    // ---------- Initialisierung ----------
+    function initDemoDaten(){
+      if(!localStorage.getItem('artikel')){
+        store.set('artikel', [
+          {nr:'SKU-001', name:'Beratung (Stunde)', preis:85, ust:19, desc:'IT- und Prozessberatung je Stunde'},
+          {nr:'SKU-100', name:'Wartungsvertrag (Monat)', preis:199, ust:19, desc:'Service & Updates'},
+          {nr:'SKU-500', name:'Webhosting (Jahr)', preis:120, ust:19, desc:'Domain, SSL, Space'}
+        ]);
+      }
+    }
+
+    // Druck-Button in Liste
+    $('#bereich-rechnungen').addEventListener('click', e=>{
+      if(e.target.id==='btn-drucken') return; // handled above
+    });
+
+    // Neue Rechnung / Laden
+    $('#btn-neue-rechnung').addEventListener('click', rechnungReset);
+
+    // Suche Artikel, Rechnungen Live
+    $('#suche-artikel')?.addEventListener('input', ladeArtikelListe);
+
+    // Seite starten
+    (function start(){
+      initDemoDaten();
+      $('#r-datum').value = todayStr();
+      $('#r-faellig').value = todayStr();
+      ladeArtikelListe();
+      rechnungenRender();
+      renderCalendar();
+      renderEventList();
+    })();
+  </script>
+</body>
+</html>

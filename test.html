@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Dropdown mit Suchfunktion</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 40px;
+      background: #f5f5f5;
+    }
+
+    .dropdown {
+      position: relative;
+      width: 260px;
+    }
+
+    .dropdown-toggle {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .dropdown-toggle:focus {
+      outline: 2px solid #2684ff33;
+      border-color: #2684ff;
+    }
+
+    .caret {
+      border-top: 5px solid #555;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      margin-left: 8px;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 110%;
+      left: 0;
+      width: 100%;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      padding: 8px;
+      box-sizing: border-box;
+      z-index: 10;
+      display: none;
+    }
+
+    .dropdown.open .dropdown-menu {
+      display: block;
+    }
+
+    .dropdown-search {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+
+    .dropdown-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .dropdown-list li {
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .dropdown-list li:hover {
+      background: #f0f5ff;
+    }
+
+    .dropdown-list li.hidden {
+      display: none;
+    }
+
+    .no-results {
+      padding: 6px 10px;
+      font-size: 13px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Dropdown-Menü mit Suchfunktion</h2>
+
+<div class="dropdown" id="techDropdown">
+  <button class="dropdown-toggle" type="button" id="dropdownButton">
+    <span id="dropdownLabel">Bitte wählen...</span>
+    <span class="caret"></span>
+  </button>
+
+  <div class="dropdown-menu">
+    <input
+      type="text"
+      class="dropdown-search"
+      id="dropdownSearch"
+      placeholder="Suchen..."
+    >
+
+    <ul class="dropdown-list" id="dropdownList">
+      <li data-value="html">HTML</li>
+      <li data-value="css">CSS</li>
+      <li data-value="javascript">JavaScript</li>
+      <li data-value="typescript">TypeScript</li>
+      <li data-value="react">React</li>
+      <li data-value="vue">Vue.js</li>
+      <li data-value="angular">Angular</li>
+      <li data-value="node">Node.js</li>
+      <li data-value="express">Express</li>
+      <li data-value="mongodb">MongoDB</li>
+      <li data-value="mysql">MySQL</li>
+      <li data-value="postgres">PostgreSQL</li>
+    </ul>
+
+    <div class="no-results" id="noResults" style="display:none;">
+      Keine Treffer …
+    </div>
+  </div>
+</div>
+
+<script>
+  const dropdown     = document.getElementById('techDropdown');
+  const toggleBtn    = document.getElementById('dropdownButton');
+  const label        = document.getElementById('dropdownLabel');
+  const searchInput  = document.getElementById('dropdownSearch');
+  const list         = document.getElementById('dropdownList');
+  const items        = Array.from(list.querySelectorAll('li'));
+  const noResultsBox = document.getElementById('noResults');
+
+  // Dropdown öffnen/schließen
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+
+    if (dropdown.classList.contains('open')) {
+      searchInput.value = '';
+      filterList('');
+      searchInput.focus();
+    }
+  });
+
+  // Suche / Filter
+  function filterList(term) {
+    const search = term.trim().toLowerCase();
+    let visibleCount = 0;
+
+    items.forEach(item => {
+      const text = item.textContent.toLowerCase();
+      if (!search || text.includes(search)) {
+        item.classList.remove('hidden');
+        visibleCount++;
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+
+    noResultsBox.style.display = visibleCount === 0 ? 'block' : 'none';
+  }
+
+  searchInput.addEventListener('input', () => {
+    filterList(searchInput.value);
+  });
+
+  // Klick auf Eintrag
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      const value = item.getAttribute('data-value');
+      label.textContent = item.textContent;
+      dropdown.dataset.value = value; // ausgewählten Wert speichern
+      dropdown.classList.remove('open');
+      console.log('Ausgewählt:', value);
+    });
+  });
+
+  // Klick außerhalb schließt Dropdown
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  // ESC schließt Dropdown
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+    }
+  });
+</script>
+
+</body>
+</html>
