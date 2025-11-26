@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rechnungsprogramm • Termine • Artikel • Kunden</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <header>
     <div class="app-title">
@@ -27,7 +29,8 @@
     <!-- Rechnungen -->
     <section id="bereich-rechnungen" class="grid two">
       <div class="card">
-        <div class="head"><h2>Neue Rechnung</h2>
+        <div class="head">
+          <h2>Neue Rechnung</h2>
           <div class="toolbar">
             <button class="btn ghost" id="btn-neue-rechnung">Zurücksetzen</button>
             <button class="btn success" id="btn-speichern-rechnung">Speichern</button>
@@ -60,10 +63,25 @@
               <div class="row">
                 <div style="flex:1 1 100%">
                   <label>Kunde auswählen</label>
-                  <select id="k-select"></select>
-                  <div class="hint">Wähle einen Kunden aus dem Stamm – Felder werden automatisch befüllt.</div>
+
+                  <!-- Custom Dropdown mit Suchfeld -->
+                  <div class="cs-container" id="k-select-wrapper">
+                    <button type="button" class="cs-display" id="k-select-display">
+                      Bitte wählen…
+                    </button>
+                    <div class="cs-panel" id="k-select-panel">
+                      <input type="text" id="k-select-search" class="cs-search" placeholder="Suchen..." />
+                      <div class="cs-options" id="k-select-options"></div>
+                    </div>
+                  </div>
+
+                  <!-- Verstecktes echtes <select> für Logik -->
+                  <select id="k-select" style="display:none"></select>
+
+                  <div class="hint">Tippe im Suchfeld und wähle den Kunden aus der Liste.</div>
                 </div>
               </div>
+
               <div class="row">
                 <div style="flex:1 1 100%">
                   <label>Name / Firma</label>
@@ -82,9 +100,11 @@
             <div>
               <h3>Unternehmen</h3>
               <div class="row">
-                <div style="flex:1 1 100%"><label>Firmenname</label><input id="u-name" placeholder="Mein Unternehmen"/></div>
-                <div style="flex:1 1 100%"><label>USt.-ID / Steuernummer</label><input id="u-steuer"/></div>
-                <div style="flex:1 1 100%"><label>Adresse</label><textarea id="u-adresse" rows="3" placeholder="Straße 1&#10;12345 Ort"></textarea></div>
+                <div style="flex:1 1 100%"><label>Firmenname</label><input id="u-name" placeholder="Mein Unternehmen" />
+                </div>
+                <div style="flex:1 1 100%"><label>USt.-ID / Steuernummer</label><input id="u-steuer" /></div>
+                <div style="flex:1 1 100%"><label>Adresse</label><textarea id="u-adresse" rows="3"
+                    placeholder="Straße 1&#10;12345 Ort"></textarea></div>
               </div>
             </div>
           </div>
@@ -132,7 +152,8 @@
               <div>
                 <label>Fußtext auf Rechnung</label>
                 <textarea id="r-fusstext" rows="3" placeholder="Zahlbar innerhalb von 14 Tagen ohne Abzug."></textarea>
-                <div class="hint">Hinweis: Über <span class="pill">Drucken</span> erhältst du eine saubere Druckansicht als PDF (Browser → „Als PDF speichern“).</div>
+                <div class="hint">Hinweis: Über <span class="pill">Drucken</span> erhältst du eine saubere Druckansicht
+                  als PDF (Browser → „Als PDF speichern“).</div>
               </div>
               <div>
                 <div class="row">
@@ -146,10 +167,22 @@
                   </div>
                 </div>
                 <div style="margin-top:8px;border:1px solid #243047;border-radius:12px;padding:12px;background:#0b1024">
-                  <div class="row"><div>Zwischensumme</div><div class="right" style="flex:1" id="summe-netto">0,00 €</div></div>
-                  <div class="row"><div>USt.</div><div class="right" style="flex:1" id="summe-ust">0,00 €</div></div>
-                  <div class="row"><div>Versand</div><div class="right" style="flex:1" id="summe-versand">0,00 €</div></div>
-                  <div class="row" style="font-weight:800;font-size:18px"><div>Gesamt</div><div class="right" style="flex:1" id="summe-gesamt">0,00 €</div></div>
+                  <div class="row">
+                    <div>Zwischensumme</div>
+                    <div class="right" style="flex:1" id="summe-netto">0,00 €</div>
+                  </div>
+                  <div class="row">
+                    <div>USt.</div>
+                    <div class="right" style="flex:1" id="summe-ust">0,00 €</div>
+                  </div>
+                  <div class="row">
+                    <div>Versand</div>
+                    <div class="right" style="flex:1" id="summe-versand">0,00 €</div>
+                  </div>
+                  <div class="row" style="font-weight:800;font-size:18px">
+                    <div>Gesamt</div>
+                    <div class="right" style="flex:1" id="summe-gesamt">0,00 €</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -169,7 +202,7 @@
         </div>
         <div class="body">
           <div style="margin-bottom:8px" class="row">
-            <input id="suche-rechnung" placeholder="Suchen nach Nr., Kunde, Datum…"/>
+            <input id="suche-rechnung" placeholder="Suchen nach Nr., Kunde, Datum…" />
           </div>
           <div style="overflow:auto;max-height:540px">
             <table id="tabelle-rechnungen">
@@ -193,7 +226,8 @@
     <!-- Kalender -->
     <section id="bereich-kalender" style="display:none" class="grid two">
       <div class="card">
-        <div class="head"><h2>Terminkalender</h2>
+        <div class="head">
+          <h2>Terminkalender</h2>
           <div class="toolbar">
             <button class="btn ghost" id="kal-prev">◀</button>
             <div class="pill" id="kal-title"></div>
@@ -214,7 +248,9 @@
         </div>
       </div>
       <div class="card">
-        <div class="head"><h2>Termin hinzufügen</h2></div>
+        <div class="head">
+          <h2>Termin hinzufügen</h2>
+        </div>
         <div class="body">
           <div class="grid two">
             <div>
@@ -249,7 +285,9 @@
     <!-- Artikel -->
     <section id="bereich-artikel" style="display:none" class="grid two">
       <div class="card">
-        <div class="head"><h2>Artikelstamm</h2></div>
+        <div class="head">
+          <h2>Artikelstamm</h2>
+        </div>
         <div class="body">
           <div class="grid two">
             <div>
@@ -280,7 +318,9 @@
         </div>
       </div>
       <div class="card">
-        <div class="head"><h2>Gespeicherte Artikel</h2></div>
+        <div class="head">
+          <h2>Gespeicherte Artikel</h2>
+        </div>
         <div class="body">
           <div class="row" style="margin-bottom:8px">
             <input id="suche-artikel" placeholder="Suchen nach Nr. oder Bezeichnung…" />
@@ -306,7 +346,9 @@
     <!-- Kundenstamm -->
     <section id="bereich-kunden" style="display:none" class="grid two">
       <div class="card">
-        <div class="head"><h2>Kundenstamm</h2></div>
+        <div class="head">
+          <h2>Kundenstamm</h2>
+        </div>
         <div class="body">
           <div class="grid two">
             <div><label>Kundennummer</label><input id="c-nr" placeholder="K-0001" /></div>
@@ -327,13 +369,22 @@
         </div>
       </div>
       <div class="card">
-        <div class="head"><h2>Gespeicherte Kunden</h2></div>
+        <div class="head">
+          <h2>Gespeicherte Kunden</h2>
+        </div>
         <div class="body">
-          <div class="row" style="margin-bottom:8px"><input id="suche-kunde" placeholder="Suche nach Nr., Name, E-Mail…" /></div>
+          <div class="row" style="margin-bottom:8px"><input id="suche-kunde"
+              placeholder="Suche nach Nr., Name, E-Mail…" /></div>
           <div style="overflow:auto;max-height:560px">
             <table id="tabelle-kunden">
               <thead>
-                <tr><th>Nr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th></th></tr>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Name</th>
+                  <th>E-Mail</th>
+                  <th>Telefon</th>
+                  <th></th>
+                </tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -347,7 +398,7 @@
       <div>
         <h1 style="margin:0">Rechnung <span id="p-nr"></span></h1>
         <div class="muted" id="p-datum"></div>
-        <hr/>
+        <hr />
         <div class="grid two">
           <div>
             <h3>Rechnung an</h3>
@@ -374,10 +425,22 @@
         </div>
         <div style="margin-top:12px;display:flex;gap:24px;justify-content:flex-end">
           <table>
-            <tr><td>Zwischensumme</td><td style="text-align:right;padding-left:16px" id="p-netto">0,00 €</td></tr>
-            <tr><td>USt.</td><td style="text-align:right;padding-left:16px" id="p-ust">0,00 €</td></tr>
-            <tr><td>Versand</td><td style="text-align:right;padding-left:16px" id="p-versand">0,00 €</td></tr>
-            <tr style="font-weight:bold"><td>Gesamt</td><td style="text-align:right;padding-left:16px" id="p-gesamt">0,00 €</td></tr>
+            <tr>
+              <td>Zwischensumme</td>
+              <td style="text-align:right;padding-left:16px" id="p-netto">0,00 €</td>
+            </tr>
+            <tr>
+              <td>USt.</td>
+              <td style="text-align:right;padding-left:16px" id="p-ust">0,00 €</td>
+            </tr>
+            <tr>
+              <td>Versand</td>
+              <td style="text-align:right;padding-left:16px" id="p-versand">0,00 €</td>
+            </tr>
+            <tr style="font-weight:bold">
+              <td>Gesamt</td>
+              <td style="text-align:right;padding-left:16px" id="p-gesamt">0,00 €</td>
+            </tr>
           </table>
         </div>
         <div style="margin-top:16px" id="p-fusstext"></div>
@@ -387,4 +450,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>
